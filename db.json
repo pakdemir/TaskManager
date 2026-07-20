@@ -1,0 +1,24 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "title": "React Native projesini oluştur",
+      "completed": true
+    },
+    {
+      "id": "2",
+      "title": "JSON Server kurulumunu yap",
+      "completed": true
+    },
+    {
+      "id": "3",
+      "title": "API servisini bağla",
+      "completed": false
+    },
+    {
+      "id": "4",
+      "title": "Görevleri ekranda listele",
+      "completed": false
+    }
+  ]
+}

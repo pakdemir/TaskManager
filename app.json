@@ -1,25 +1,36 @@
 {
   "expo": {
     "name": "TaskManager",
-    "slug": "TaskManager",
+    "slug": "taskmanager",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icon.jpg",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.taskmanager.app"
     },
     "android": {
+      "package": "com.taskmanager.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/app-icon.jpg"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "59bcb4ef-c990-4ad3-8d2d-0ca8ceb457b7"
+      }
+    },
+    "owner": "sudepakdemirs-team",
+    "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-community/datetimepicker"
+    ]
   }
 }
