@@ -1,0 +1,25 @@
+import { StyleSheet } from 'react-native';
+
+export const taskListStyles = StyleSheet.create({
+  container: { flex: 1 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  searchContainer: { paddingHorizontal: 16, paddingTop: 16 },
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
+  searchInput: { flex: 1, padding: 12, borderRadius: 8, fontSize: 16 },
+  iconBtn: { marginLeft: 12, padding: 8, backgroundColor: 'transparent', borderRadius: 20 },
+  controlsContainer: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#333' },
+  filterContainer: { flex: 1 },
+  filterScrollContent: { alignItems: 'center', paddingRight: 8 },
+  filterTab: { paddingVertical: 8, paddingHorizontal: 12, alignItems: 'center', borderRadius: 20, marginHorizontal: 4 },
+  activeFilterTab: { backgroundColor: '#007BFF' },
+  filterText: { fontSize: 12, fontWeight: '600', color: '#888' },
+  activeFilterText: { color: '#fff' },
+  sortButton: { marginLeft: 8, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#007BFF', borderRadius: 8 },
+  sortText: { fontSize: 12, fontWeight: 'bold', color: '#fff' },
+  listContainer: { padding: 16, flexGrow: 1 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
+  buttonContainer: { padding: 16, borderTopWidth: 1, borderTopColor: '#333' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 999 },
+  overlayBox: { backgroundColor: '#fff', padding: 24, borderRadius: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
+  overlayText: { marginTop: 12, fontSize: 16, fontWeight: 'bold', color: '#333' },
+});

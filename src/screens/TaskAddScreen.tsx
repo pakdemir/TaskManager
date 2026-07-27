@@ -1,199 +1,203 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, Platform } from 'react-native';
+import { View, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import * as Notifications from 'expo-notifications';
-import { Calendar } from 'lucide-react-native';
+import { useForm, Controller } from 'react-hook-form';
 
 import { RootStackParamList, Priority } from '../types';
-import { useTasks } from '../context/TaskContext';
+import useTaskStore from '../stores/taskStore';
+import useCategoryStore from '../stores/categoryStore';
+import useUIStore from '../stores/uiStore';
+import useAuthStore from '../stores/authStore';
+
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
+import TaskPrioritySelector from '../components/TaskPrioritySelector';
+import TaskCategorySelector from '../components/TaskCategorySelector';
+import TaskDatePicker from '../components/TaskDatePicker';
+import TaskStatusSelector from '../components/TaskStatusSelector';
+import { createActivity } from '../services/activityService';
+
+import { taskAddStyles as styles } from './TaskAddScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TaskAdd'>;
 
 export default function TaskAddScreen({ route, navigation }: Props) {
-  const { tasks, addTask, updateTask, isDarkMode } = useTasks();
+  const { tasks, addTask, updateTask } = useTaskStore();
+  const { isDarkMode } = useUIStore();
+  const { categories, fetchCategories } = useCategoryStore();
   
   const taskId = route.params?.taskToEdit;
   const isEditing = !!taskId;
 
-  // Form State'leri
-  const [title, setTitle] = useState(''); 
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<Priority>('Orta');
-  const [titleError, setTitleError] = useState('');
-  
-  // Tarih State'leri
+  const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+    defaultValues: { title: '', description: '', priority: 'medium' as Priority, categoryId: '', status: 'pending' as any }
+  });
+  const selectedPriority = watch('priority');
+  const selectedCategory = watch('categoryId');
+  const selectedStatus = watch('status');
+
+  // State
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isDateSelected, setIsDateSelected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Dinamik Renkler
-  const textColor = isDarkMode ? '#fff' : '#333';
-  const labelColor = isDarkMode ? '#ccc' : '#333';
-  const panelBg = isDarkMode ? '#1e1e1e' : '#fff';
-  const borderColor = isDarkMode ? '#444' : '#ccc';
+  // Theme Colors
+  const bgColor = isDarkMode ? '#121212' : '#F8F9FA';
+  const textColor = isDarkMode ? '#FFFFFF' : '#1F2937';
+  const labelColor = isDarkMode ? '#9CA3AF' : '#4B5563';
+  const panelBg = isDarkMode ? '#1F2937' : '#FFFFFF';
+  const borderColor = isDarkMode ? '#374151' : '#E5E7EB';
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   useEffect(() => {
     if (isEditing) {
       const taskToUpdate = tasks.find(t => t.id === taskId);
       if (taskToUpdate) {
-        setTitle(taskToUpdate.title);
-        setDescription(taskToUpdate.description || '');
-        setPriority(taskToUpdate.priority);
+        setValue('title', taskToUpdate.title);
+        setValue('description', taskToUpdate.description || '');
+        // @ts-ignore
+        setValue('priority', taskToUpdate.priority || 'medium');
+        setValue('categoryId', taskToUpdate.categoryId || '');
+        setValue('status', taskToUpdate.status || 'pending');
+        
         if (taskToUpdate.dueDate) {
-          const parsed = new Date(taskToUpdate.dueDate.split('.').reverse().join('-'));
+          const parsed = new Date(taskToUpdate.dueDate);
           if (!isNaN(parsed.getTime())) {
              setDueDate(parsed);
              setIsDateSelected(true);
+          } else {
+             const parts = taskToUpdate.dueDate.split(/[./-]/);
+             if (parts.length === 3) {
+               const oldParsed = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+               if (!isNaN(oldParsed.getTime())) {
+                 setDueDate(oldParsed);
+                 setIsDateSelected(true);
+               }
+             }
           }
         }
       }
     }
-  }, [isEditing, taskId, tasks]);
+  }, [isEditing, taskId, tasks, setValue]);
 
-  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowDatePicker(false);
-    if (selectedDate) {
-      setDueDate(selectedDate);
-      setIsDateSelected(true);
-    }
-  };
-
-  const handleSave = async () => {
-    if (title.trim() === '') {
-      setTitleError('Görev başlığı zorunludur.');
-      return;
-    }
-    
+  const onSubmit = async (data: any) => {
     setIsSaving(true);
-    
-    const dateString = isDateSelected ? dueDate.toLocaleDateString('tr-TR') : '';
+    const dateString = isDateSelected ? dueDate.toISOString() : '';
 
-    if (isEditing && taskId) {
-      updateTask(taskId, { title, description, priority, dueDate: dateString });
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Görev Güncellendi",
-          body: `"${title}" başarıyla güncellendi.`,
-        },
-        trigger: null,
-      });
-    } else {
-      addTask({ title, description, priority, dueDate: dateString, isCompleted: false });
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Yeni Görev Eklendi",
-          body: `"${title}" listene başarıyla eklendi!`,
-        },
-        trigger: null,
-      });
-    }
-    
-    setTimeout(() => {
+    try {
+      if (isEditing && taskId) {
+        await updateTask(taskId, { ...data, dueDate: dateString });
+        await createActivity({ taskId, action: 'Görev düzenlendi.', userId: useAuthStore.getState().user?.email || 'Bilinmeyen Kullanıcı', createdAt: new Date().toISOString() });
+      } else {
+        const { user } = useAuthStore.getState();
+        const newTaskData = { 
+          ...data, 
+          dueDate: dateString,
+          ownerId: user?.uid || 'unknown-user',
+          contributorIds: []
+        };
+        const addedTask = await addTask(newTaskData);
+        await createActivity({ taskId: addedTask.id, action: 'Görev oluşturuldu.', userId: user?.email || 'Bilinmeyen Kullanıcı', createdAt: new Date().toISOString() });
+      }
       setIsSaving(false);
       navigation.goBack();
-    }, 400); // Daha kısa loading simülasyonu
+    } catch (error: any) {
+      setIsSaving(false);
+      Alert.alert('Hata', error.message || 'Görev kaydedilemedi.');
+    }
   };
 
   return (
-    <SafeAreaView edges={['right', 'left', 'bottom']} style={[styles.container, { backgroundColor: isDarkMode ? '#121212' : '#fff' }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        <CustomInput
-          label="Görev Başlığı *"
-          placeholder="Örn: React Native projesini tamamla"
-          value={title}
-          onChangeText={(text) => {
-            setTitle(text);
-            if (text.trim() !== '') setTitleError('');
-          }}
-          error={titleError}
-        />
+    <SafeAreaView edges={['right', 'left', 'bottom']} style={[styles.container, { backgroundColor: bgColor }]}>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          <Controller
+            control={control}
+            rules={{ required: 'Görev başlığı zorunludur.' }}
+            render={({ field: { onChange, value } }) => (
+              <CustomInput
+                label="Görev Başlığı *"
+                placeholder="Örn: React Native projesini tamamla"
+                value={value}
+                onChangeText={onChange}
+                error={errors.title?.message?.toString()}
+              />
+            )}
+            name="title"
+          />
 
-        <CustomInput
-          label="Açıklama"
-          placeholder="Görev detaylarını buraya yazabilirsiniz..."
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          numberOfLines={4}
-        />
+          <Controller
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <CustomInput
+                label="Açıklama"
+                placeholder="Görev detaylarını buraya yazabilirsiniz..."
+                value={value}
+                onChangeText={onChange}
+                multiline
+                numberOfLines={4}
+              />
+            )}
+            name="description"
+          />
 
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: labelColor }]}>Öncelik Seviyesi</Text>
-          <View style={styles.priorityButtons}>
-            {(['Düşük', 'Orta', 'Yüksek'] as Priority[]).map((p) => (
-              <TouchableOpacity
-                key={p}
-                style={[
-                  styles.priorityTab, 
-                  { backgroundColor: panelBg, borderColor: borderColor },
-                  priority === p && styles.priorityTabActive
-                ]}
-                onPress={() => setPriority(p)}
-              >
-                <Text style={[styles.priorityText, { color: textColor }, priority === p && styles.priorityTextActive]}>{p}</Text>
-              </TouchableOpacity>
-            ))}
+          <TaskStatusSelector
+            value={selectedStatus}
+            onChange={(s) => setValue('status', s)}
+          />
+
+          <TaskPrioritySelector
+            selectedPriority={selectedPriority}
+            onSelect={(p) => setValue('priority', p)}
+            panelBg={panelBg}
+            borderColor={borderColor}
+            textColor={textColor}
+            labelColor={labelColor}
+          />
+
+          <TaskCategorySelector
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onSelect={(id) => setValue('categoryId', id)}
+            panelBg={panelBg}
+            borderColor={borderColor}
+            textColor={textColor}
+            labelColor={labelColor}
+          />
+
+          <TaskDatePicker
+            dueDate={dueDate}
+            setDueDate={setDueDate}
+            isDateSelected={isDateSelected}
+            setIsDateSelected={setIsDateSelected}
+            showDatePicker={showDatePicker}
+            setShowDatePicker={setShowDatePicker}
+            panelBg={panelBg}
+            borderColor={borderColor}
+            textColor={textColor}
+            labelColor={labelColor}
+            isDarkMode={isDarkMode}
+          />
+
+          <View style={styles.footer}>
+            <CustomButton 
+              title={isEditing ? "Değişiklikleri Kaydet" : "Görevi Kaydet"} 
+              onPress={handleSubmit(onSubmit)} 
+              isLoading={isSaving}
+            />
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: labelColor }]}>Son Tarih</Text>
-          <TouchableOpacity 
-            style={[styles.dateButton, { backgroundColor: panelBg, borderColor: borderColor, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]} 
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={{ color: textColor }}>
-              {isDateSelected ? dueDate.toLocaleDateString('tr-TR') : "Tarih Seçiniz"}
-            </Text>
-            <Calendar size={20} color={textColor} />
-          </TouchableOpacity>
-        </View>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={dueDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
-            minimumDate={new Date()}
-            themeVariant={isDarkMode ? "dark" : "light"}
-            textColor={isDarkMode ? "#ffffff" : "#000000"}
-          />
-        )}
-
-        <View style={styles.footer}>
-          <CustomButton 
-            title={isEditing ? "Değişiklikleri Kaydet" : "Görevi Kaydet"} 
-            onPress={handleSave} 
-            isLoading={isSaving}
-          />
-        </View>
-
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { padding: 16 },
-  section: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: 'bold', marginBottom: 8 },
-  priorityButtons: { flexDirection: 'row', justifyContent: 'space-between' },
-  priorityTab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderRadius: 8, marginHorizontal: 4 },
-  priorityTabActive: { backgroundColor: '#007BFF', borderColor: '#007BFF' },
-  priorityText: { fontSize: 14, fontWeight: '600' },
-  priorityTextActive: { color: '#fff' },
-  dateButton: { 
-    padding: 12, 
-    borderRadius: 8, 
-    borderWidth: 1, 
-  },
-  footer: { marginTop: 24 },
-});

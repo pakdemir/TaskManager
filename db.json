@@ -1,24 +1,75 @@
 {
   "tasks": [
     {
-      "id": "1",
-      "title": "React Native projesini oluştur",
-      "completed": true
+      "title": "ERP",
+      "description": "Figen hanım görev verdi ",
+      "priority": "urgent",
+      "categoryId": "",
+      "status": "pending",
+      "dueDate": "2026-07-27T10:16:44.000Z",
+      "ownerId": "D5fGlL8yJQZdjWsvQ4GkpfYy0T53",
+      "contributorIds": [],
+      "createdAt": 1784715411716,
+      "id": "oip52uxw7"
     },
     {
-      "id": "2",
-      "title": "JSON Server kurulumunu yap",
-      "completed": true
+      "title": "Sude Pakdemir ",
+      "description": "Doğum Günü",
+      "priority": "high",
+      "categoryId": "",
+      "status": "pending",
+      "dueDate": "2026-08-16T14:12:41.000Z",
+      "ownerId": "D5fGlL8yJQZdjWsvQ4GkpfYy0T53",
+      "contributorIds": [],
+      "createdAt": "2026-07-24T14:12:49.038Z",
+      "id": "60hkfmsek"
     },
     {
-      "id": "3",
-      "title": "API servisini bağla",
-      "completed": false
-    },
-    {
-      "id": "4",
-      "title": "Görevleri ekranda listele",
-      "completed": false
+      "title": "Linkedln",
+      "description": "-",
+      "priority": "low",
+      "categoryId": "",
+      "status": "pending",
+      "dueDate": "2026-07-25T14:13:13.000Z",
+      "ownerId": "D5fGlL8yJQZdjWsvQ4GkpfYy0T53",
+      "contributorIds": [],
+      "createdAt": "2026-07-24T14:13:17.112Z",
+      "id": "xrqefafgr"
     }
-  ]
+  ],
+  "categories": [],
+  "subtasks": [],
+  "comments": [
+    {
+      "taskId": "q6gi5279a",
+      "message": "Çok üzücü",
+      "authorId": "sudepakdemir1999@gmail.com",
+      "createdAt": "2026-07-21T11:24:54.106Z",
+      "id": 1
+    }
+  ],
+  "activities": [
+    {
+      "taskId": "oip52uxw7",
+      "action": "Görev oluşturuldu.",
+      "userId": "sudepakdemir1999@gmail.com",
+      "createdAt": "2026-07-22T10:16:51.786Z",
+      "id": 1
+    },
+    {
+      "taskId": "60hkfmsek",
+      "action": "Görev oluşturuldu.",
+      "userId": "sudepakdemir1999@gmail.com",
+      "createdAt": "2026-07-24T14:12:49.144Z",
+      "id": 2
+    },
+    {
+      "taskId": "xrqefafgr",
+      "action": "Görev oluşturuldu.",
+      "userId": "sudepakdemir1999@gmail.com",
+      "createdAt": "2026-07-24T14:13:17.193Z",
+      "id": 3
+    }
+  ],
+  "users": []
 }

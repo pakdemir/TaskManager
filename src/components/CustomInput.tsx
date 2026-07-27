@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TextInput, Text, StyleSheet, TextInputProps } from 'react-native';
-import { useTasks } from '../context/TaskContext';
+import useUIStore from '../stores/uiStore';
 
 interface CustomInputProps extends TextInputProps {
   label: string;
@@ -8,7 +8,7 @@ interface CustomInputProps extends TextInputProps {
 }
 
 export default function CustomInput({ label, error, ...props }: CustomInputProps) {
-  const { isDarkMode } = useTasks();
+  const { isDarkMode } = useUIStore();
   
   const textColor = isDarkMode ? '#fff' : '#333';
   const bgColor = isDarkMode ? '#1e1e1e' : '#fff';

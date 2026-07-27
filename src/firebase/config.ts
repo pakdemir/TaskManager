@@ -1,23 +1,30 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // TODO: Bu alanları kendi Firebase projenizin (986411465955) ayarları ile değiştirin.
 // Firebase Console'a gidip Proje Ayarları (Project Settings) kısmından Android veya Web uygulamasının yapılandırmasını (config) kopyalayabilirsiniz.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID", // Örn: "proje-id-986411465955"
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "986411465955", // Proje numaranız (Gönderen ID)
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC91D9gVZi6wSmfRHEErRy9okdO8e4ZE10",
+  authDomain: "taskmaneger-91a16.firebaseapp.com",
+  projectId: "taskmaneger-91a16",
+  storageBucket: "taskmaneger-91a16.firebasestorage.app",
+  messagingSenderId: "986411465955",
+  appId: "1:986411465955:web:f8218b1fdf18dc0a3899d6",
+  measurementId: "G-B9YZ9F1ZKR"
 };
 
 // Uygulamayı Başlat
 const app = initializeApp(firebaseConfig);
 
-// Authentication (E-posta/Şifre için)
-export const auth = getAuth(app);
+import { initializeAuth } from 'firebase/auth';
+// @ts-ignore
+import { getReactNativePersistence } from 'firebase/auth';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+
+// Authentication
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+});
 
 // Firestore (Veritabanı için)
 export const db = getFirestore(app);

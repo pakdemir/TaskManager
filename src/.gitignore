@@ -1,0 +1,14 @@
+# Bağımlılıklar (Çok ağır olduğu için yüklenmez)
+node_modules/
+
+# Ortam Değişkenleri ve Hassas Firebase Bilgileri
+.env
+.env.local
+.env.*
+
+# iOS ve Android Derleme Dosyaları (Gereksiz ağırlık yapar)
+android/app/build/
+android/.gradle/
+android/.idea/
+ios/Pods/
+ios/build/

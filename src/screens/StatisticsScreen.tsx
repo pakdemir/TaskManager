@@ -1,18 +1,31 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTasks } from '../context/TaskContext';
+import useTaskStore from '../stores/taskStore';
+import useUIStore from '../stores/uiStore';
+import useAuthStore from '../stores/authStore';
+import CustomButton from '../components/CustomButton';
 
-export default function StatisticsScreen() {
-  const { tasks, isDarkMode } = useTasks();
+export default function StatisticsScreen({ navigation }: any) {
+  const { tasks } = useTaskStore();
+  const { isDarkMode } = useUIStore();
+  const { user } = useAuthStore();
+  const userId = user?.uid;
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.isCompleted).length;
+  const completedTasks = tasks.filter((t) => t.status === 'completed').length;
   const pendingTasks = totalTasks - completedTasks;
+  const overdueTasks = tasks.filter((t) => t.status !== 'completed' && t.dueDate && t.dueDate < todayStr).length;
+  const todayTasks = tasks.filter((t) => t.dueDate === todayStr).length;
+  
+  const assignedToMe = tasks.filter((t) => t.assignedTo === userId).length;
+  const sharedWithMe = tasks.filter((t) => t.contributorIds?.includes(userId || '')).length;
 
-  const highPriority = tasks.filter((t) => t.priority === 'Yüksek').length;
-  const mediumPriority = tasks.filter((t) => t.priority === 'Orta').length;
-  const lowPriority = tasks.filter((t) => t.priority === 'Düşük').length;
+  const highPriority = tasks.filter((t) => t.priority === 'high' || t.priority === 'urgent').length;
+  const mediumPriority = tasks.filter((t) => t.priority === 'medium').length;
+  const lowPriority = tasks.filter((t) => t.priority === 'low').length;
 
   const completionRate = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
@@ -37,7 +50,11 @@ export default function StatisticsScreen() {
               <Text style={[styles.statLabel, { color: labelColor }]}>Tamamlanan</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={[styles.statValue, { color: '#ff9800' }]}>{pendingTasks}</Text>
+              <Text style={[styles.statValue, { color: '#2196F3' }]}>{tasks.filter(t => t.status === 'in_progress').length}</Text>
+              <Text style={[styles.statLabel, { color: labelColor }]}>Devam Eden</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statValue, { color: '#ff9800' }]}>{tasks.filter(t => t.status === 'pending').length}</Text>
               <Text style={[styles.statLabel, { color: labelColor }]}>Bekleyen</Text>
             </View>
           </View>
@@ -65,6 +82,36 @@ export default function StatisticsScreen() {
               <Text style={[styles.statLabel, { color: labelColor }]}>Düşük</Text>
             </View>
           </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: cardColor }]}>
+          <Text style={[styles.cardTitle, { color: textColor }]}>İşbirliği ve Tarih</Text>
+          <View style={[styles.statRow, { flexWrap: 'wrap' }]}>
+            <View style={[styles.statBox, { width: '50%', marginBottom: 16 }]}>
+              <Text style={[styles.statValue, { color: '#8e24aa' }]}>{assignedToMe}</Text>
+              <Text style={[styles.statLabel, { color: labelColor }]}>Bana Atananlar</Text>
+            </View>
+            <View style={[styles.statBox, { width: '50%', marginBottom: 16 }]}>
+              <Text style={[styles.statValue, { color: '#3949ab' }]}>{sharedWithMe}</Text>
+              <Text style={[styles.statLabel, { color: labelColor }]}>Katkıda Bulunduklarım</Text>
+            </View>
+            <View style={[styles.statBox, { width: '50%' }]}>
+              <Text style={[styles.statValue, { color: '#00acc1' }]}>{todayTasks}</Text>
+              <Text style={[styles.statLabel, { color: labelColor }]}>Bugünün Görevleri</Text>
+            </View>
+            <View style={[styles.statBox, { width: '50%' }]}>
+              <Text style={[styles.statValue, { color: '#d32f2f' }]}>{overdueTasks}</Text>
+              <Text style={[styles.statLabel, { color: labelColor }]}>Gecikenler</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={{ marginTop: 24, marginHorizontal: 20 }}>
+          <CustomButton 
+            title="Kategori Yönetimi" 
+            onPress={() => navigation.navigate('CategoryManagement')} 
+            variant="outline"
+          />
         </View>
 
       </ScrollView>

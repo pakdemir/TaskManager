@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -10,34 +10,26 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
+import { useForm, Controller } from 'react-hook-form';
 import useAuthStore from '../../stores/authStore';
 
 export default function RegisterScreen({ navigation }: any) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const { register, isLoading } = useAuthStore();
 
-  const handleRegister = async () => {
-    if (!email || !password || !confirmPassword) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurun.');
-      return;
-    }
+  const { control, handleSubmit, formState: { errors }, watch } = useForm({
+    defaultValues: { email: '', password: '', confirmPassword: '' }
+  });
 
-    if (password !== confirmPassword) {
-      Alert.alert('Hata', 'Şifreler birbiriyle eşleşmiyor.');
-      return;
-    }
-
+  const onSubmit = async (data: any) => {
     try {
-      await register(email, password);
-      Alert.alert('Başarılı!', 'Hesabınız oluşturuldu. Giriş yapabilirsiniz.', [
-        { text: 'Tamam', onPress: () => navigation.navigate('Login') }
-      ]);
+      await register(data.email, data.password);
+      // Firebase otomatik giriş yaptığı için App.tsx bizi doğrudan görevlere atacaktır.
     } catch (error: any) {
       Alert.alert('Kayıt Başarısız', error.message || 'Bir hata oluştu.');
     }
   };
+
+  const password = watch('password');
 
   return (
     <KeyboardAvoidingView 
@@ -52,44 +44,74 @@ export default function RegisterScreen({ navigation }: any) {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>E-posta</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="ornek@mail.com"
-            placeholderTextColor="#9ca3af"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
+          <Controller
+            control={control}
+            rules={{ required: 'E-posta gerekli', pattern: { value: /\S+@\S+\.\S+/, message: 'Geçerli e-posta girin' } }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, errors.email && styles.inputError]}
+                placeholder="ornek@mail.com"
+                placeholderTextColor="#9ca3af"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+            name="email"
           />
+          {errors.email && <Text style={styles.errorText}>{errors.email.message?.toString()}</Text>}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Şifre</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor="#9ca3af"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
+          <Controller
+            control={control}
+            rules={{ required: 'Şifre gerekli', minLength: { value: 6, message: 'Şifre en az 6 karakter olmalı' } }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="••••••••"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+            name="password"
           />
+          {errors.password && <Text style={styles.errorText}>{errors.password.message?.toString()}</Text>}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Şifre (Tekrar)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor="#9ca3af"
-            secureTextEntry
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
+          <Controller
+            control={control}
+            rules={{ 
+              required: 'Şifreyi onaylamanız gerekli',
+              validate: value => value === password || 'Şifreler eşleşmiyor'
+            }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, errors.confirmPassword && styles.inputError]}
+                placeholder="••••••••"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+            name="confirmPassword"
           />
+          {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword.message?.toString()}</Text>}
         </View>
 
         <TouchableOpacity 
           style={styles.registerButton} 
-          onPress={handleRegister}
+          onPress={handleSubmit(onSubmit)}
           disabled={isLoading}
         >
           {isLoading ? (
@@ -150,11 +172,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: '#0f172a',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+  },
+  inputError: {
+    borderColor: '#ef4444',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
   },
   registerButton: {
     backgroundColor: '#4f46e5',

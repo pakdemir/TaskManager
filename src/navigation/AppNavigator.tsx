@@ -7,6 +7,8 @@ import TaskListScreen from '../screens/TaskListScreen';
 import TaskAddScreen from '../screens/TaskAddScreen';
 import TaskDetailScreen from '../screens/TaskDetailScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
+import ProfileScreen from '../screens/ProfileScreen'; 
+import CategoryManagementScreen from '../screens/CategoryManagementScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -39,6 +41,16 @@ export default function AppNavigator() {
         name="Statistics" 
         component={StatisticsScreen} 
         options={{ title: 'İstatistikler' }} 
+      />
+      <Stack.Screen 
+        name="Profile" 
+        component={ProfileScreen} 
+        options={{ title: 'Profilim' }} 
+      />
+      <Stack.Screen 
+        name="CategoryManagement" 
+        component={CategoryManagementScreen} 
+        options={{ title: 'Kategoriler', headerShown: false }} 
       />
     </Stack.Navigator>
   );

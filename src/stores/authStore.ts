@@ -1,13 +1,20 @@
 import { create } from 'zustand';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut,
+  User 
+} from 'firebase/auth';
+import { auth } from '../firebase/config';
 
 interface AuthState {
-  user: FirebaseAuthTypes.User | null;
+  user: User | null;
   isLoading: boolean;
   error: string | null;
-  setUser: (user: FirebaseAuthTypes.User | null) => void;
+  setUser: (user: User | null) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -23,9 +30,10 @@ const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      await auth().signInWithEmailAndPassword(email, password);
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
+      throw error; // UI'da yakalamak için hatayı fırlatıyoruz
     }
   },
 
@@ -33,10 +41,23 @@ const useAuthStore = create<AuthState>((set) => ({
   register: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      await auth().createUserWithEmailAndPassword(email, password);
+      await createUserWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error; // UI'da göstermek için throw atıyoruz
+    }
+  },
+
+  // Şifremi Unuttum fonksiyonu
+  forgotPassword: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { sendPasswordResetEmail } = require('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      set({ isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+      throw error;
     }
   },
 
@@ -44,8 +65,19 @@ const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     set({ isLoading: true });
     try {
-      await auth().signOut();
+      await signOut(auth);
       set({ user: null, isLoading: false }); 
+      
+      // Diğer mağazaları sıfırla
+      const useTaskStore = require('./taskStore').default;
+      const useCategoryStore = require('./categoryStore').default;
+      const useCollaborationStore = require('./collaborationStore').default;
+      const useUIStore = require('./uiStore').default;
+      
+      useTaskStore.getState().reset();
+      useCategoryStore.getState().reset();
+      useCollaborationStore.getState().reset();
+      useUIStore.getState().reset();
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }

@@ -1,35 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
-import { BarChart2, Sun, Moon } from 'lucide-react-native';
+import { View, Text, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { useTasks } from '../context/TaskContext';
+import useTaskStore from '../stores/taskStore';
+import useUIStore from '../stores/uiStore';
+import useCategoryStore from '../stores/categoryStore';
+import useAuthStore from '../stores/authStore';
 import TaskCard from '../components/TaskCard';
 import CustomButton from '../components/CustomButton';
 
+// Components
+import HomeHeader from '../components/HomeHeader';
+import HomeFilters from '../components/HomeFilters';
+import HomeCategories from '../components/HomeCategories';
+
+// Utils & Styles
+import { FilterType, SortType, filterAndSortTasks } from '../utils/taskFilters';
+import { taskListStyles as styles } from './TaskListScreen.styles';
+
 type Props = NativeStackScreenProps<RootStackParamList, 'TaskList'>;
-type FilterType = 'Tümü' | 'Bekleyenler' | 'Tamamlananlar';
-type SortType = 'Yeni' | 'Eski';
 
 export default function TaskListScreen({ navigation }: Props) {
-  // Context'ten karanlık mod değerlerini çektik
-  const { tasks, isDarkMode, toggleTheme } = useTasks();
+  const { tasks, isLoading: isTasksLoading, fetchTasks, error, updateTask } = useTaskStore();
+  const { isDarkMode, toggleTheme } = useUIStore();
+  const { categories, addCategory, updateCategory, deleteCategory, fetchCategories } = useCategoryStore();
+  const { user } = useAuthStore();
+  const userId = user?.uid;
+  
   const [activeFilter, setActiveFilter] = useState<FilterType>('Tümü');
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortType>('Yeni');
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<{id: string, name: string} | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    Promise.all([fetchTasks(), fetchCategories()]).finally(() => setIsLoading(false));
   }, []);
 
-  const processedTasks = tasks
-    .filter((t) => activeFilter === 'Bekleyenler' ? !t.isCompleted : activeFilter === 'Tamamlananlar' ? t.isCompleted : true)
-    .filter((t) => searchQuery.trim() === '' || t.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => sortOrder === 'Yeni' ? b.createdAt - a.createdAt : a.createdAt - b.createdAt);
+  const processedTasks = filterAndSortTasks(tasks, {
+    activeFilter,
+    activeCategoryId,
+    searchQuery,
+    sortOrder,
+    userId
+  });
 
   const bgColor = isDarkMode ? '#121212' : '#f5f5f5';
   const panelColor = isDarkMode ? '#1e1e1e' : '#fff';
@@ -52,6 +71,45 @@ export default function TaskListScreen({ navigation }: Props) {
     }, 400);
   };
 
+  const handleCategoryLongPress = (id: string, name: string) => {
+    Alert.alert(
+      "Kategori İşlemleri",
+      "Ne yapmak istersiniz?",
+      [
+        { text: "Düzenle", onPress: () => {
+            setEditingCategory({ id, name });
+            setNewCategoryName(name);
+            setIsAddingCategory(true);
+        }},
+        { text: "Sil", onPress: () => {
+            Alert.alert("Emin misiniz?", "Bu kategoriyi silmek istediğinize emin misiniz?", [
+              { text: "İptal", style: "cancel" },
+              { text: "Sil", style: "destructive", onPress: () => {
+                  if (activeCategoryId === id) setActiveCategoryId(null);
+                  deleteCategory(id);
+                  // Orphan data fix: Kategorisi silinen görevlerin categoryId'sini temizle
+                  tasks.filter(t => t.categoryId === id).forEach(t => updateTask(t.id, { categoryId: undefined }));
+              }}
+            ]);
+        }},
+        { text: "İptal", style: "cancel" }
+      ]
+    );
+  };
+
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      if (editingCategory) {
+        updateCategory(editingCategory.id, { name: newCategoryName.trim() });
+      } else {
+        addCategory({ name: newCategoryName.trim(), color: '#007BFF' });
+      }
+      setNewCategoryName('');
+      setIsAddingCategory(false);
+      setEditingCategory(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: bgColor }]}>
@@ -63,52 +121,46 @@ export default function TaskListScreen({ navigation }: Props) {
   return (
     <SafeAreaView edges={['right', 'left', 'bottom']} style={[styles.container, { backgroundColor: bgColor }]}>
       
-      {/* Üst Bar: Arama ve Butonlar */}
-      <View style={[styles.searchContainer, { backgroundColor: panelColor }]}>
-        <View style={styles.headerRow}>
-          <TextInput
-            style={[styles.searchInput, { backgroundColor: inputBgColor, color: textColor }]}
-            placeholder="Görev başlığında ara..."
-            placeholderTextColor={isDarkMode ? '#888' : '#aaa'}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Statistics')}>
-            <BarChart2 size={24} color={textColor} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={toggleTheme}>
-            {isDarkMode ? <Sun size={24} color={textColor} /> : <Moon size={24} color={textColor} />}
-          </TouchableOpacity>
-        </View>
-      </View>
+      <HomeHeader
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isDarkMode={isDarkMode}
+        toggleTheme={toggleTheme}
+        onNavigateToStats={() => navigation.navigate('Statistics')}
+        onNavigateToProfile={() => navigation.navigate('Profile')}
+        panelColor={panelColor}
+        inputBgColor={inputBgColor}
+        textColor={textColor}
+      />
 
-      <View style={[styles.controlsContainer, { backgroundColor: panelColor }]}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-          contentContainerStyle={styles.filterScrollContent}
-        >
-          {(['Tümü', 'Bekleyenler', 'Tamamlananlar'] as FilterType[]).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[styles.filterTab, activeFilter === filter && styles.activeFilterTab]}
-              onPress={() => setActiveFilter(filter)}
-            >
-              <Text style={[styles.filterText, activeFilter === filter && styles.activeFilterText]}>
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        <TouchableOpacity style={styles.sortButton} onPress={() => setSortOrder(sortOrder === 'Yeni' ? 'Eski' : 'Yeni')}>
-          <Text style={styles.sortText}>Sırala: {sortOrder}</Text>
-        </TouchableOpacity>
+      <View style={[styles.controlsContainer, { backgroundColor: panelColor, flexDirection: 'column', alignItems: 'stretch' }]}>
+        <HomeFilters
+          activeFilter={activeFilter}
+          setActiveFilter={setActiveFilter}
+          sortOrder={sortOrder}
+          setSortOrder={setSortOrder}
+        />
+        <HomeCategories
+          categories={categories}
+          activeCategoryId={activeCategoryId}
+          setActiveCategoryId={setActiveCategoryId}
+          isAddingCategory={isAddingCategory}
+          setIsAddingCategory={setIsAddingCategory}
+          newCategoryName={newCategoryName}
+          setNewCategoryName={setNewCategoryName}
+          handleAddCategory={handleAddCategory}
+          handleCategoryLongPress={handleCategoryLongPress}
+          setEditingCategory={setEditingCategory}
+          inputBgColor={inputBgColor}
+          textColor={textColor}
+        />
       </View>
 
       <FlatList
         data={processedTasks}
         keyExtractor={(item) => item.id}
+        refreshing={isTasksLoading}
+        onRefresh={fetchTasks}
         renderItem={({ item }) => (
           <TaskCard 
             task={item} 
@@ -118,9 +170,16 @@ export default function TaskListScreen({ navigation }: Props) {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={{ fontSize: 16, color: '#888', fontStyle: 'italic' }}>
-              {searchQuery !== '' ? 'Bulunamadı.' : 'Görev yok.'}
-            </Text>
+            {error ? (
+               <>
+                 <Text style={{ fontSize: 16, color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>
+                 <CustomButton title="Tekrar Dene" onPress={() => fetchTasks()} />
+               </>
+            ) : (
+               <Text style={{ fontSize: 16, color: '#888', fontStyle: 'italic' }}>
+                 {searchQuery !== '' ? 'Bulunamadı.' : 'Görev yok.'}
+               </Text>
+            )}
           </View>
         }
         contentContainerStyle={styles.listContainer}
@@ -130,7 +189,6 @@ export default function TaskListScreen({ navigation }: Props) {
         <CustomButton title="+ Görev Ekle" onPress={handleAddPress} />
       </View>
 
-      {/* Navigasyon Yükleme Ekranı (Overlay) */}
       {isNavigating && (
         <View style={styles.overlay}>
           <View style={styles.overlayBox}>
@@ -142,27 +200,3 @@ export default function TaskListScreen({ navigation }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  searchContainer: { paddingHorizontal: 16, paddingTop: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center' },
-  searchInput: { flex: 1, padding: 12, borderRadius: 8, fontSize: 16 },
-  iconBtn: { marginLeft: 12, padding: 8, backgroundColor: 'transparent', borderRadius: 20 },
-  controlsContainer: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#333' },
-  filterContainer: { flex: 1 },
-  filterScrollContent: { alignItems: 'center', paddingRight: 8 },
-  filterTab: { paddingVertical: 8, paddingHorizontal: 12, alignItems: 'center', borderRadius: 20, marginHorizontal: 4 },
-  activeFilterTab: { backgroundColor: '#007BFF' },
-  filterText: { fontSize: 12, fontWeight: '600', color: '#888' },
-  activeFilterText: { color: '#fff' },
-  sortButton: { marginLeft: 8, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#007BFF', borderRadius: 8 },
-  sortText: { fontSize: 12, fontWeight: 'bold', color: '#fff' },
-  listContainer: { padding: 16, flexGrow: 1 },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
-  buttonContainer: { padding: 16, borderTopWidth: 1, borderTopColor: '#333' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 999 },
-  overlayBox: { backgroundColor: '#fff', padding: 24, borderRadius: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
-  overlayText: { marginTop: 12, fontSize: 16, fontWeight: 'bold', color: '#333' },
-});

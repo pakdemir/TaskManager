@@ -12,12 +12,12 @@
     },
     "android": {
       "package": "com.taskmanager.app",
-      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/app-icon.jpg"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,7 +29,6 @@
     },
     "owner": "sudepakdemirs-team",
     "plugins": [
-      "@react-native-firebase/app",
       "@react-native-community/datetimepicker"
     ]
   }

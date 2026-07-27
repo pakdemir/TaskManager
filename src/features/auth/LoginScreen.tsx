@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -10,23 +10,35 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
+import { useForm, Controller } from 'react-hook-form';
 import useAuthStore from '../../stores/authStore';
 
 export default function LoginScreen({ navigation }: any) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { login, isLoading } = useAuthStore();
+  const { login, forgotPassword, isLoading } = useAuthStore();
+  
+  const { control, handleSubmit, formState: { errors }, getValues } = useForm({
+    defaultValues: { email: '', password: '' }
+  });
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Hata', 'Lütfen e-posta ve şifrenizi girin.');
-      return;
-    }
-
+  const onSubmit = async (data: any) => {
     try {
-      await login(email, password);
+      await login(data.email, data.password);
     } catch (error: any) {
       Alert.alert('Giriş Başarısız', error.message || 'Bir hata oluştu.');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const email = getValues('email');
+    if (!email) {
+      Alert.alert('Hata', 'Şifre sıfırlama bağlantısı göndermek için lütfen e-posta adresinizi girin.');
+      return;
+    }
+    try {
+      await forgotPassword(email);
+      Alert.alert('Başarılı', 'Şifre sıfırlama e-postası gönderildi. Lütfen gelen kutunuzu kontrol edin.');
+    } catch (error: any) {
+      Alert.alert('Hata', error.message || 'Şifre sıfırlama işlemi başarısız oldu.');
     }
   };
 
@@ -43,32 +55,54 @@ export default function LoginScreen({ navigation }: any) {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>E-posta</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="ornek@mail.com"
-            placeholderTextColor="#9ca3af"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
+          <Controller
+            control={control}
+            rules={{ required: 'E-posta gerekli', pattern: { value: /\S+@\S+\.\S+/, message: 'Geçerli bir e-posta girin' } }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, errors.email && styles.inputError]}
+                placeholder="ornek@mail.com"
+                placeholderTextColor="#9ca3af"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+            name="email"
           />
+          {errors.email && <Text style={styles.errorText}>{errors.email.message?.toString()}</Text>}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Şifre</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor="#9ca3af"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
+          <Controller
+            control={control}
+            rules={{ required: 'Şifre gerekli' }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="••••••••"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+            name="password"
           />
+          {errors.password && <Text style={styles.errorText}>{errors.password.message?.toString()}</Text>}
         </View>
+        
+        <TouchableOpacity style={styles.forgotPasswordContainer} onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={styles.forgotPasswordText}>Şifremi Unuttum</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity 
           style={styles.loginButton} 
-          onPress={handleLogin}
+          onPress={handleSubmit(onSubmit)}
           disabled={isLoading}
         >
           {isLoading ? (
@@ -112,7 +146,7 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
@@ -129,18 +163,29 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: '#0f172a',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+  },
+  inputError: {
+    borderColor: '#ef4444',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 20,
+  },
+  forgotPasswordText: {
+    color: '#4f46e5',
+    fontSize: 14,
+    fontWeight: '600',
   },
   loginButton: {
     backgroundColor: '#4f46e5',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 10,
     shadowColor: '#4f46e5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
