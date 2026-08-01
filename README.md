@@ -76,7 +76,7 @@ npm install
 JSON Server'ı çalıştırın:
 
 ```bash
-npm run server
+npx json-server --watch db.json --port 3000
 ```
 
 Uygulamayı başlatın:
