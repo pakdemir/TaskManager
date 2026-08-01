@@ -43,12 +43,11 @@ export default function TaskAddScreen({ route, navigation }: Props) {
   const [isDateSelected, setIsDateSelected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Theme Colors
-  const bgColor = isDarkMode ? '#121212' : '#F8F9FA';
-  const textColor = isDarkMode ? '#FFFFFF' : '#1F2937';
-  const labelColor = isDarkMode ? '#9CA3AF' : '#4B5563';
-  const panelBg = isDarkMode ? '#1F2937' : '#FFFFFF';
-  const borderColor = isDarkMode ? '#374151' : '#E5E7EB';
+  const bgColor = isDarkMode ? '#121212' : '#f5f5f5';
+  const panelBg = isDarkMode ? '#1e1e1e' : '#fff';
+  const textColor = isDarkMode ? '#fff' : '#333';
+  const labelColor = isDarkMode ? '#aaa' : '#666';
+  const borderColor = isDarkMode ? '#333' : '#e0e0e0';
 
   useEffect(() => {
     fetchCategories();
@@ -105,6 +104,7 @@ export default function TaskAddScreen({ route, navigation }: Props) {
         await createActivity({ taskId: addedTask.id, action: 'Görev oluşturuldu.', userId: user?.email || 'Bilinmeyen Kullanıcı', createdAt: new Date().toISOString() });
       }
       setIsSaving(false);
+      useUIStore.getState().setActiveFilter('Tümü');
       navigation.goBack();
     } catch (error: any) {
       setIsSaving(false);

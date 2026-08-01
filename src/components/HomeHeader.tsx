@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
-import { BarChart2, Sun, Moon } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { taskListStyles as styles } from '../screens/TaskListScreen.styles';
 
 interface HomeHeaderProps {
@@ -36,15 +36,6 @@ export default function HomeHeader({
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <TouchableOpacity style={styles.iconBtn} onPress={onNavigateToStats}>
-          <BarChart2 size={24} color={textColor} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn} onPress={onNavigateToProfile}>
-          <Text style={{ color: textColor, fontWeight: 'bold' }}>Profil</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn} onPress={toggleTheme}>
-          {isDarkMode ? <Sun size={24} color={textColor} /> : <Moon size={24} color={textColor} />}
-        </TouchableOpacity>
       </View>
     </View>
   );

@@ -28,7 +28,7 @@ export default function CustomButton({ title, variant = 'primary', isLoading = f
       {...props}
     >
       {isLoading ? (
-        <ActivityIndicator color={variant === 'outline' ? '#007BFF' : '#fff'} />
+        <ActivityIndicator color={variant === 'outline' ? '#3B82F6' : '#fff'} />
       ) : (
         <Text style={[styles.text, getTextStyle()]}>{title}</Text>
       )}
@@ -38,11 +38,11 @@ export default function CustomButton({ title, variant = 'primary', isLoading = f
 
 const styles = StyleSheet.create({
   button: { padding: 14, borderRadius: 8, alignItems: 'center', marginVertical: 8 },
-  buttonPrimary: { backgroundColor: '#007BFF' },
-  buttonDanger: { backgroundColor: '#DC3545' },
-  buttonOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#007BFF' },
+  buttonPrimary: { backgroundColor: '#3B82F6' },
+  buttonDanger: { backgroundColor: '#EF4444' },
+  buttonOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#3B82F6' },
   text: { fontSize: 16, fontWeight: 'bold' },
   textLight: { color: '#fff' },
-  textOutline: { color: '#007BFF' },
+  textOutline: { color: '#3B82F6' },
   buttonDisabled: { opacity: 0.7 },
 });

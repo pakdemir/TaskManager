@@ -53,7 +53,7 @@ export interface Task {
 }
 
 export type RootStackParamList = {
-  TaskList: undefined;
+  TaskList: { resetFilter?: boolean } | undefined;
   TaskAdd: { taskToEdit?: string } | undefined;
   TaskDetail: { taskId: string };
   Statistics: undefined;

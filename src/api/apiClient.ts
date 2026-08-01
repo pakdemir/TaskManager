@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-let serverIP = 'localhost';
+let serverIP = '0.0.0.0';
 
 // Eğer Expo Go ile çalışıyorsak (Fiziksel cihaz), bilgisayarın IP'sini Expo'dan otomatik al
 const debuggerHost = Constants.expoConfig?.hostUri;
@@ -22,16 +22,15 @@ if (Platform.OS === 'ios' && !debuggerHost) {
   serverIP = 'localhost';
 }
 
-// Güvenlik duvarı ve ağ izolasyonu dertlerinden tamamen kurtulmak için
-// Tünel URL'sini kullanıyoruz (Senior çözümü)
-const BASE_URL = `https://bumpy-bugs-clean.loca.lt`;
+// Üniversite/Ortak ağ izolasyonunu aşmak için geçici olarak Localtunnel URL'i kullanıyoruz.
+const BASE_URL = `http://${serverIP}:3000`;
 console.log('📡 API BASE_URL:', BASE_URL); // Debug için eklendi
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Bypass-Tunnel-Reminder': 'true', // Localtunnel uyarı sayfasını atlamak için
+    'Bypass-Tunnel-Reminder': 'true', // Localtunnel uyarı sayfasını atlamak için çok önemli
   },
   timeout: 30000, // Artırılmış timeout süresi (30 saniye)
 });
